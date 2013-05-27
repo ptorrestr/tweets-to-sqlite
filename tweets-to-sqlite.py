@@ -1,29 +1,30 @@
 #!/usr/bin/env python
-
+#change!
 import sys
 import argparse 
 import sqlite3
 import twitter
 import json
 import time
+from time import gmtime, strftime
 
 def tweetexists(tweetid, cur):
     rows = cur.execute("SELECT id FROM tweets WHERE id = ?", (tweetid, )).fetchall()
     return (len(rows) > 0)
 
 def resetsleeptime(api):
-	try:
-    	ratelimitstats = api.GetRateLimitStatus()
-    	showstatuslimits = ratelimitstats['resources']['statuses']['/statuses/show/:id']
-    	hitsremaining = showstatuslimits['remaining']
-    	resettime = showstatuslimits['reset']
-    	print("resettime = ", resettime, " time.time() = ", time.time() , " hit = ", hitsremaining)
-    	sleeptime = int((int(resettime) - time.time()) / int(hitsremaining))
-    	print("Sleeping", sleeptime, "seconds between API hits until", resettime)
-    	return sleeptime, resettime, 1
-	except:
-		print("Unexpected error:", sys.exc_info()[0])
-		return 0, 0, 0
+    try:
+        ratelimitstats = api.GetRateLimitStatus()
+        showstatuslimits = ratelimitstats['resources']['statuses']['/statuses/show/:id']
+        hitsremaining = showstatuslimits['remaining']
+        resettime = showstatuslimits['reset']
+        print("resettime = ", resettime, " time.time() = ", time.time() , " hit = ", hitsremaining)
+        sleeptime = int((int(resettime) - time.time()) / int(hitsremaining))
+        print("Sleeping", sleeptime, "seconds between API hits until", resettime)
+        return sleeptime, resettime, 1
+    except:
+	    print("Unexpected error:", sys.exc_info()[0])
+	    return 0, 0, 0
 
 def main(dbfile, query, consumerkey,
          consumersecret, accesstoken, accesstokensecret):
@@ -57,16 +58,17 @@ def main(dbfile, query, consumerkey,
                 inserttweet(tweet, 0, cur)
                 if lastid < tweetid:
                     lastid = tweetid
-            print("Last id = ", lastid, " query = ", query_num)
+            strTime = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
+            print("Last id = ", lastid, " query = ", query_num, " time = ", strTime)
             query_num = query_num + 1
         except twitter.TwitterError as err:
             print((str(int(time.time())) , " Error reading tweet id:", tweetid))
             print((str(err)))
         time.sleep(sleeptime) 
         if (time.time() >= resettime):
-			valid = 0
-			while not valid == 0:
-            	[sleeptime, resettime, valid] = resetsleeptime(api);
+            valid = 0
+            while not valid == 0:
+                [sleeptime, resettime, valid] = resetsleeptime(api);
 
     conn.close()
 
