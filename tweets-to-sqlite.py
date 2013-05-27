@@ -12,14 +12,18 @@ def tweetexists(tweetid, cur):
     return (len(rows) > 0)
 
 def resetsleeptime(api):
-    ratelimitstats = api.GetRateLimitStatus()
-    showstatuslimits = ratelimitstats['resources']['statuses']['/statuses/show/:id']
-    hitsremaining = showstatuslimits['remaining']
-    resettime = showstatuslimits['reset']
-    print("resettime = ", resettime, " time.time() = ", time.time() , " hit = ", hitsremaining)
-    sleeptime = int((int(resettime) - time.time()) / int(hitsremaining))
-    print("Sleeping", sleeptime, "seconds between API hits until", resettime)
-    return sleeptime, resettime
+	try:
+    	ratelimitstats = api.GetRateLimitStatus()
+    	showstatuslimits = ratelimitstats['resources']['statuses']['/statuses/show/:id']
+    	hitsremaining = showstatuslimits['remaining']
+    	resettime = showstatuslimits['reset']
+    	print("resettime = ", resettime, " time.time() = ", time.time() , " hit = ", hitsremaining)
+    	sleeptime = int((int(resettime) - time.time()) / int(hitsremaining))
+    	print("Sleeping", sleeptime, "seconds between API hits until", resettime)
+    	return sleeptime, resettime, 1
+	except:
+		print("Unexpected error:", sys.exc_info()[0])
+		return 0, 0, 0
 
 def main(dbfile, query, consumerkey,
          consumersecret, accesstoken, accesstokensecret):
@@ -33,7 +37,7 @@ def main(dbfile, query, consumerkey,
     cur = conn.cursor()
     createtable(cur);
 
-    [sleeptime, resettime] = resetsleeptime(api)
+    [sleeptime, resettime, valid] = resetsleeptime(api)
     time.sleep(sleeptime)
     
     query_num = 1
@@ -60,7 +64,9 @@ def main(dbfile, query, consumerkey,
             print((str(err)))
         time.sleep(sleeptime) 
         if (time.time() >= resettime):
-            [sleeptime, resettime] = resetsleeptime(api);
+			valid = 0
+			while not valid == 0:
+            	[sleeptime, resettime, valid] = resetsleeptime(api);
 
     conn.close()
 

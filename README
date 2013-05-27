@@ -1,0 +1,9 @@
+You need:
+
+distribute
+rfc822py3
+oauth2 (parched for python3)
+iri2uri.py
+httplib2.py
+twitter.py (parched for python3)
+
